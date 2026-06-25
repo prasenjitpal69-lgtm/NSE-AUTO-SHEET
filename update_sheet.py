@@ -81,3 +81,24 @@ if data_to_insert:
     status_msg = f"Data Date: {fetched_date_str} | Last Update: {ist_now} (IST)"
     worksheet.update('K2', [[status_msg]])
     print("SUCCESS: Sheet Updated!")
+# Copy data to Final list sheet
+final_sheet = client.open("Volume Breakout stocks").worksheet("Final list")
+
+# Clear old data
+final_sheet.batch_clear(["A2:H1000"])
+
+# Copy NSE Code, CMP, Volume
+rows = []
+
+for row in data_to_insert:
+    rows.append([
+        row[0],   # NSE CODE
+        row[2],   # CMP
+        row[1],   # VOLUME
+        "", "", "", "", ""
+    ])
+
+if rows:
+    final_sheet.update("A2", rows)
+
+print("Final list updated successfully!")
