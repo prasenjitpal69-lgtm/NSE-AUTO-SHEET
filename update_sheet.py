@@ -95,7 +95,11 @@ for row in data_to_insert:
         row[0],   # NSE CODE
         row[2],   # CMP
         row[1],   # VOLUME
-        "", "", "", "", ""
+        "",
+        "",
+        "",
+        "",
+        ""
     ])
 
 if rows:
