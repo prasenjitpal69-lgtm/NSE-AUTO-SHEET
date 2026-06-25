@@ -150,45 +150,36 @@ if data_to_insert:
 
 # -----------------------------
 # Update Final List Sheet
-# -----------------------------
+# -----------------------------------------
+# Update Final List Sheet
+# -----------------------------------------
 try:
+    final_sheet = client.open("Volume Breakout stocks").worksheet("Final list")
 
-    final_sheet = spreadsheet.worksheet("Final list")
-
+    # Clear old data
     final_sheet.batch_clear(["A2:H1000"])
 
     rows = []
 
-    for row in data_to_insert:
-
-        rows.append([
-
-            row[0],      # NSE CODE
-
-            row[2],      # CMP
-
-            row[1],      # VOLUME
-
-            "",
-
-            "",
-
-            "",
-
-            "",
-
-            ""
-
-        ])
-
-    if rows:
+    if data_to_insert:
+        for row in data_to_insert:
+            rows.append([
+                str(row[0]),   # NSE CODE
+                row[2],        # CMP
+                row[1],        # VOLUME
+                "",
+                "",
+                "",
+                "",
+                ""
+            ])
 
         final_sheet.update("A2", rows)
+        print(f"Final List Updated Successfully : {len(rows)} Stocks")
 
-    print("Final List Updated")
+    else:
+        print("No data found.")
 
 except Exception as e:
-
     print("Final List Error")
-
     print(e)
