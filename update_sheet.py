@@ -92,3 +92,70 @@ for i in range(5):
 
 if df is None:
     raise Exception("Bhavcopy Not Found")
+if df is None:
+    raise Exception("Bhavcopy Not Found")
+
+# -----------------------------
+# FILTER TOP 250
+# -----------------------------
+symbol_col = "TckrSymb" if "TckrSymb" in df.columns else "SYMBOL"
+close_col = "ClsPric" if "ClsPric" in df.columns else "CLOSE"
+series_col = "SctySrs" if "SctySrs" in df.columns else "SERIES"
+
+volume_col = None
+
+for c in ["TtlTradgVol", "TtlTrdQty", "TotTrdQty", "TOTTRDQTY"]:
+    if c in df.columns:
+        volume_col = c
+        break
+
+if volume_col is None:
+    raise Exception("Volume column not found")
+
+df = df[df[series_col].astype(str).str.strip() == "EQ"]
+
+df = df[
+    ~df[symbol_col].astype(str).str.contains(
+        "ETF|BEES|LIQUID|GOLD|SILVER|CASE",
+        case=False,
+        na=False
+    )
+]
+
+df = df.sort_values(
+    by=volume_col,
+    ascending=False
+).head(250)
+
+data_to_insert = df[[symbol_col, volume_col, close_col]].values.tolist()
+
+# -----------------------------
+# UPDATE TOP 250
+# -----------------------------
+top_sheet.batch_clear(["A2:C251"])
+top_sheet.update("A2", data_to_insert)
+
+print("Top 250 Updated")
+
+# -----------------------------
+# UPDATE FINAL LIST
+# -----------------------------
+final_sheet.batch_clear(["A2:H1000"])
+
+rows = []
+
+for row in data_to_insert:
+    rows.append([
+        row[0],
+        row[2],
+        row[1],
+        "",
+        "",
+        "",
+        "",
+        ""
+    ])
+
+final_sheet.update("A2", rows)
+
+print("Final List Updated")
