@@ -1,37 +1,94 @@
-# ===========================
-# Update Final list sheet
-# ===========================
+import gspread
+import pandas as pd
+import requests
+import zipfile
+import io
+import json
+import os
 
-try:
-    final_sheet = client.open_by_key(spreadsheet_id).worksheet("Final list")
+from datetime import datetime, timedelta
 
-    final_sheet.batch_clear(["A2:H1000"])
+from oauth2client.service_account import ServiceAccountCredentials
 
-    rows = []
 
-    for row in data_to_insert:
-        rows.append([
-            row[0],   # NSE CODE
-            row[2],   # CMP
-            row[1],   # VOLUME
-            "",
-            "",
-            "",
-            "",
-            ""
-        ])
+# ----------------------------
+# GOOGLE SHEETS LOGIN
+# ----------------------------
 
-    print("Rows =", len(rows))
+creds_json = os.environ["GCP_CREDENTIALS"]
 
-    if rows:
-        final_sheet.update(
-            range_name="A2",
-            values=rows
-        )
-        print("Final List Updated Successfully")
-    else:
-        print("No rows found")
+creds = json.loads(creds_json)
 
-except Exception as e:
-    print("Final List Error:")
-    print(str(e))
+scope = [
+    "https://spreadsheets.google.com/feeds",
+    "https://www.googleapis.com/auth/drive"
+]
+
+credentials = ServiceAccountCredentials.from_json_keyfile_dict(
+    creds,
+    scope
+)
+
+client = gspread.authorize(credentials)
+
+SPREADSHEET_ID = "1SIZ5uhesUd6sC4DyvpBetQDYS3sIe6iWHVIfF8hRIOM"
+
+top_sheet = client.open_by_key(
+    SPREADSHEET_ID
+).worksheet("Top 250 Stocks")
+
+final_sheet = client.open_by_key(
+    SPREADSHEET_ID
+).worksheet("Final list")
+# ----------------------------
+# DOWNLOAD NSE BHAVCOPY
+# ----------------------------
+
+def fetch_bhavcopy(date_obj):
+
+    date_str = date_obj.strftime("%Y%m%d")
+
+    url = f"https://nsearchives.nseindia.com/content/cm/BhavCopy_NSE_CM_0_0_0_{date_str}_F_0000.csv.zip"
+
+    headers = {
+        "User-Agent": "Mozilla/5.0"
+    }
+
+    response = requests.get(
+        url,
+        headers=headers,
+        timeout=30
+    )
+
+    if response.status_code != 200:
+        return None
+
+    with zipfile.ZipFile(io.BytesIO(response.content)) as z:
+
+        csv_file = z.namelist()[0]
+
+        with z.open(csv_file) as f:
+
+            df = pd.read_csv(f)
+
+    return df
+    # ----------------------------
+# FIND LATEST TRADING DAY
+# ----------------------------
+
+df = None
+
+for i in range(5):
+
+    d = datetime.now() - timedelta(days=i)
+
+    if d.weekday() >= 5:
+        continue
+
+    df = fetch_bhavcopy(d)
+
+    if df is not None:
+        break
+
+if df is None:
+    raise Exception("Bhavcopy Not Found")
